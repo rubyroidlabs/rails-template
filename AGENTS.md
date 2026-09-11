@@ -72,7 +72,7 @@ Report the results of these commands to the user. Do not report the setup as don
 - No test may make a real third-party network call.
 - A change isn't done until `bin/rubocop`, `bin/brakeman`, `bin/bundler-audit` and `npm run lint:js` are clean.
 
-`README.md` has the commands. `docs/agents/` has the issue-tracker and domain-doc conventions.
+`README.md` has the commands. `docs/agents/` has the domain-doc conventions.
 
 ## What the template deliberately leaves out
 

@@ -43,10 +43,6 @@ Rails monolith. Stack and setup/run/test commands: [README.md](README.md) — do
 
 `bin/setup-agents` installs them: the [mattpocock/skills](https://github.com/mattpocock/skills) pack (a plugin for Claude Code, copied files under `.agents/skills/` for Codex and Cursor) and graphify. It also writes the harness config — `.claude/settings.json`, `.codex/hooks.json`, `.cursor/rules/`, and the `## graphify` section at the end of this file. Re-run it to upgrade; don't hand-edit what it generates.
 
-### Issue tracker
-
-Issues live as GitHub issues in this repo, managed via the `gh` CLI (`gh` infers the repo from `git remote -v`). See `docs/agents/issue-tracker.md`.
-
 ### Domain docs
 
 Single-context layout: `CONTEXT.md` + `docs/adr/` at the repo root (created lazily as needed). See `docs/agents/domain.md`.

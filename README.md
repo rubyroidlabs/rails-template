@@ -80,7 +80,7 @@ This is the part `rails new` doesn't give you.
 - **`bin/setup-agents`** — installs the agent tooling with each tool's own installer, then leaves the harness config it generates (`.claude/`, `.codex/`, `.cursor/`, `.agents/skills/`) checked into the repo so every contributor and every agent gets the same setup. `rails new` runs it for you; re-run it to upgrade. Nothing is vendored into this template by hand, so the skills you get are the ones their authors are shipping today.
 - **[mattpocock/skills](https://github.com/mattpocock/skills)** — installed as a Claude Code plugin, and copied under `.agents/skills/` (pinned in `skills-lock.json`) for Codex and Cursor. Gives you `/implement`, `/code-review`, `/research`, `/grill-with-docs` and the rest as first-class workflows instead of ad-hoc prompting.
 - **graphify** — a knowledge-graph skill wired into all three harnesses, with hooks that push agents to query the graph before grepping. Run `/graphify` once in the new repo to build it; `graphify-out/` is gitignored.
-- **`docs/agents/`** — how agents should use the issue tracker (GitHub issues via `gh`) and the domain docs (`CONTEXT.md` + `docs/adr/`, created lazily).
+- **`docs/agents/`** — how agents should use the domain docs (`CONTEXT.md` + `docs/adr/`, created lazily).
 
 ### Credentials
 
