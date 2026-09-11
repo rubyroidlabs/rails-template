@@ -22,6 +22,10 @@ Rails monolith. Stack and setup/run/test commands: [README.md](README.md) — do
 
 - Tailwind CSS + Heroicons (`heroicon` gem) only — no other CSS framework or icon set.
 
+## AI features
+
+- When a feature calls for talking to an LLM (chat, generation, embeddings, tool calling, etc.), use the [ruby_llm](https://github.com/crmne/ruby_llm) gem rather than hand-rolling HTTP calls to a provider's API or adding a different Ruby LLM client.
+
 ## Testing
 
 - No test may make a real network call to a third party. Every external service (payment processor, mail API, etc.) must be stubbed. `webmock`/`vcr` aren't in the Gemfile yet — add one before writing a spec that touches an external HTTP client.
