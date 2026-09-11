@@ -1,0 +1,16 @@
+---
+openapi: 3.0.1
+info:
+  title: API V1
+  version: v1
+paths:
+  "/up":
+    get:
+      summary: Checks application health
+      tags:
+      - Health
+      responses:
+        '200':
+          description: application boots with no exceptions
+servers:
+- url: http://localhost:3000

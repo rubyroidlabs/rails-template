@@ -1,0 +1,108 @@
+name: Test template
+
+on:
+  pull_request:
+  push:
+    branches: [ main ]
+  schedule:
+    # Weekly, so a new Rails release that breaks generation is caught early.
+    - cron: "0 6 * * 1"
+
+jobs:
+  generate:
+    name: rails new with this template
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: demo_app
+          POSTGRES_PASSWORD: demo_app
+          POSTGRES_DB: demo_app_test
+        ports:
+          - "5432:5432"
+        options: >-
+          --health-cmd "pg_isready -U demo_app"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_HOST: localhost
+      DATABASE_PORT: 5432
+      DATABASE_USERNAME: demo_app
+      DATABASE_PASSWORD: demo_app
+
+    steps:
+      - name: Checkout template
+        uses: actions/checkout@v6
+        with:
+          path: rails-template
+
+      - name: Install system packages
+        run: sudo apt-get update -qq && sudo apt-get install --no-install-recommends -y libpq-dev libvips
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "4.0"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Install Rails
+        run: gem install rails --no-document
+
+      - name: Generate the app
+        run: |
+          rails new demo_app \
+            --database=postgresql \
+            --css=tailwind \
+            --skip-test \
+            --skip-action-cable \
+            -m rails-template/template.rb
+
+      - name: Prepare the database
+        working-directory: demo_app
+        env:
+          RAILS_ENV: test
+        run: bin/rails db:prepare
+
+      - name: RSpec
+        working-directory: demo_app
+        env:
+          RAILS_ENV: test
+        run: bundle exec rspec
+
+      - name: RuboCop
+        working-directory: demo_app
+        run: bin/rubocop
+
+      - name: Brakeman
+        working-directory: demo_app
+        run: bin/brakeman --no-pager
+
+      - name: ESLint
+        working-directory: demo_app
+        run: npm run lint:js
+
+      - name: Install Playwright browsers
+        working-directory: demo_app
+        run: npx playwright install --with-deps chromium
+
+      - name: Playwright
+        working-directory: demo_app
+        env:
+          RAILS_ENV: test
+        run: npx playwright test
+
+      - name: Assert no secrets were committed by the template
+        working-directory: demo_app
+        run: |
+          if git ls-files | grep -q "config/master.key"; then
+            echo "::error::config/master.key is tracked in the generated app"
+            exit 1
+          fi

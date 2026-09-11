@@ -1,0 +1,7 @@
+# Scratch space for trying the template out locally.
+/tmp/
+/.bundle/
+.DS_Store
+
+# Local, per-developer agent settings.
+/.claude/settings.local.json

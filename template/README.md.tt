@@ -1,0 +1,123 @@
+# <%= app_name.titleize %>
+
+A Ruby on Rails monolith, generated from [rubyroidlabs/rails-template](https://github.com/rubyroidlabs/rails-template).
+
+## Stack
+
+- **Ruby** 4.0+ · **Rails** 8.0+
+- **PostgreSQL** — primary datastore
+- **Solid Queue** — background jobs (DB-backed, no Redis)
+- **Solid Cache** — Rails cache (DB-backed)
+- **Pundit** — authorization (policies + scopes)
+- **Interactor** — business logic (interactors / organizers)
+- **Blueprinter** (+ **Oj**) — JSON serialization for API responses
+- **Tailwind CSS** + **Heroicons** — UI
+- **Hotwire** (Turbo + Stimulus) — frontend interactivity
+- **RSpec** — unit/model/request specs
+- **rswag** — OpenAPI docs generated from request specs, served at `/api-docs`
+- **Playwright** — end-to-end browser tests (`e2e/`)
+- **MailHog** — catches outgoing email locally
+- **Kamal** — deployment
+
+## Prerequisites
+
+- Ruby (see `.ruby-version`)
+- Docker (for Postgres + MailHog via `docker-compose.yml`)
+- Node.js (for Playwright and ESLint)
+
+## Setup
+
+Start the local service dependencies (Postgres + MailHog) first:
+
+```bash
+docker compose up -d
+```
+
+Then:
+
+```bash
+bin/setup
+```
+
+This installs gems, prepares the database, and starts the dev server. Pass `--reset` to drop and reset the database, or `--skip-server` to skip booting the server.
+
+## Running the app
+
+```bash
+bin/dev
+```
+
+Boots the Rails server and the Tailwind watcher (via `Procfile.dev`) on `http://localhost:3000`.
+
+- Outgoing email in development is routed to MailHog — view it at `http://localhost:8025`.
+- API docs (Swagger UI) are served at `http://localhost:3000/api-docs`.
+
+## Testing
+
+Tests must never make real third-party API calls — stub every external service.
+
+**Unit / request specs (RSpec):**
+
+```bash
+bundle exec rspec
+```
+
+**API docs** are generated from rswag request specs:
+
+```bash
+bundle exec rake rswag:specs:swaggerize
+```
+
+**End-to-end (Playwright):** boots its own Rails server in the test environment automatically.
+
+```bash
+npm run test:e2e         # headless run
+npm run test:e2e:ui      # interactive UI mode
+npm run test:e2e:report  # view the last HTML report
+```
+
+The first e2e run needs browsers installed: `npx playwright install --with-deps chromium`.
+
+## Code quality
+
+```bash
+bin/rubocop         # style (Omakase Rails config)
+bin/brakeman        # static security analysis
+bin/bundler-audit   # dependency vulnerability audit
+npm run lint:js     # ESLint for Stimulus controllers (app/javascript)
+```
+
+`bin/ci` runs the full CI pipeline defined in `config/ci.rb`.
+
+## Deployment
+
+Deployed with [Kamal](https://kamal-deploy.org). Configuration lives in `config/deploy.yml` and secrets in `.kamal/secrets`.
+
+```bash
+bin/kamal deploy
+```
+
+Useful aliases: `bin/kamal console`, `bin/kamal shell`, `bin/kamal logs`, `bin/kamal dbc`.
+
+## Project conventions
+
+See [AGENTS.md](AGENTS.md) for the engineering conventions this codebase follows (architecture, authorization, testing, UI). Human contributors should follow the same conventions.
+
+### AI Skills
+
+The `mattpocock-skills` plugin is enabled for this repo — use it for development rather than working ad hoc.
+
+The main skills for this project's workflow:
+
+- `/grill-with-docs` — stress-tests a plan/decision and, along the way, is how this project keeps its domain docs: a `CONTEXT.md` glossary and `docs/adr/` architecture decision records, both at the repo root, created lazily as real terms/decisions emerge. Agents read them per `docs/agents/domain.md`.
+- `/implement` — build the feature/fix once it's planned.
+- `/code-review` — review a diff/PR/branch for correctness and cleanup before merging.
+- `/research` — investigate a question against primary sources and capture findings as a doc in the repo.
+
+Prefer these over improvising the equivalent workflow by hand.
+
+The same skills are vendored for other harnesses under `.agents/skills/` (Codex/OpenAI-style) and pinned in `skills-lock.json`.
+
+### graphify
+
+A graphify knowledge graph is wired up for Claude Code, Cursor and Codex (`.claude/`, `.cursor/`, `.codex/`). Run `/graphify` once in your agent to build it, then agents query it (`graphify query`, `graphify path`, `graphify explain`) instead of grepping. The generated `graphify-out/` directory is gitignored. The skill itself is vendored at `.claude/skills/graphify/`.

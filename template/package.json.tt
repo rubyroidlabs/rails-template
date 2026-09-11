@@ -1,0 +1,19 @@
+{
+  "name": "<%= app_name.dasherize %>",
+  "version": "0.1.0",
+  "private": true,
+  "type": "commonjs",
+  "scripts": {
+    "lint:js": "eslint app/javascript",
+    "lint:js:fix": "eslint app/javascript --fix",
+    "test:e2e": "playwright test",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.63.0",
+    "eslint": "^10.10.0",
+    "globals": "^17.12.0"
+  }
+}
