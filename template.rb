@@ -198,13 +198,12 @@ def copy_application_files
   copy_file "CLAUDE.md"
   directory "docs"
 
-  # Agent harness config and vendored skills. Thor's `directory` doesn't recurse
-  # into dot-directories, so each one is copied explicitly.
-  copy_file "skills-lock.json"
-  directory ".agents"
-  directory ".claude"
-  directory ".codex"
-  directory ".cursor"
+  # Agent tooling installs itself (see `run_agent_setup`); the template only
+  # copies the script that drives it. Everything the skills and graphify
+  # installers write — .agents/skills, .claude, .codex, .cursor,
+  # skills-lock.json — is generated in the new app rather than vendored here.
+  copy_file "bin/setup-agents"
+  chmod "bin/setup-agents", 0o755, verbose: false
 end
 
 def patch_generated_files
@@ -266,6 +265,22 @@ def keep_file(dir)
   create_file File.join(dir, ".keep"), "", verbose: false
 end
 
+# The skills and graphify installers need network access and tools we don't
+# control (uv/pipx, npx, the Claude Code CLI). The script reports and skips
+# whatever is missing, and can be re-run by hand, so a failure here is a
+# warning rather than a dead `rails new`.
+def run_agent_setup
+  if ENV["SKIP_AGENT_SETUP"]
+    say_status :skip, "agent tooling (SKIP_AGENT_SETUP set) — run bin/setup-agents later", :yellow
+    return
+  end
+
+  say_status :agents, "installing skills and graphify", :green
+  return if run("bin/setup-agents", capture: false, abort_on_failure: false)
+
+  say_status :warn, "bin/setup-agents did not finish — re-run it by hand", :yellow
+end
+
 # ---------------------------------------------------------------------------
 # Run
 # ---------------------------------------------------------------------------
@@ -303,6 +318,8 @@ after_bundle do
     say_status :skip, "npm not found — run `npm install` before using Playwright/ESLint", :yellow
   end
 
+  run_agent_setup
+
   say <<~DONE
 
     ------------------------------------------------------------------------
@@ -311,6 +328,9 @@ after_bundle do
       cd #{app_name}
       docker compose up -d      # Postgres + MailHog
       bin/setup                 # gems, database, dev server
+
+    Agent tooling (skills + graphify) is installed by bin/setup-agents; re-run
+    it any time to upgrade, and after cloning this repo somewhere new.
 
     Then read AGENTS.md — it's the contract every agent and human follows here.
     ------------------------------------------------------------------------

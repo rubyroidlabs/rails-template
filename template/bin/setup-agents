@@ -1,0 +1,138 @@
+#!/usr/bin/env bash
+#
+# Install the agent tooling this repo expects, with each tool's own installer.
+#
+#   bin/setup-agents                    # everything
+#   bin/setup-agents --skip-graphify    # leave the knowledge graph alone
+#   bin/setup-agents --skip-skills      # leave the skill packs alone
+#
+# Nothing here is vendored by hand: skills and harness config are written by the
+# tools themselves, so `bin/setup-agents` is also how you upgrade them. Every
+# step is idempotent, and a missing prerequisite is reported and skipped rather
+# than failing the run.
+
+set -uo pipefail
+cd "$(dirname "$0")/.."
+
+SKIP_GRAPHIFY=0
+SKIP_SKILLS=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --skip-graphify) SKIP_GRAPHIFY=1 ;;
+    --skip-skills)   SKIP_SKILLS=1 ;;
+    -h|--help)       sed -n '3,7p' "$0" | cut -c3- ; exit 0 ;;
+    *) echo "unknown option: $arg (try --help)" >&2; exit 1 ;;
+  esac
+done
+
+SKIPPED=""
+
+say()  { printf '\n\033[1m==> %s\033[0m\n' "$1"; }
+note() { printf '    %s\n' "$1"; }
+skip() { printf '    \033[33mskipped\033[0m — %s\n' "$1"; SKIPPED="${SKIPPED}  - $1"$'\n'; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# The hook commands the installers write carry the absolute path of the binary
+# on whoever ran this, which then gets committed. Keep them as a bare `graphify`
+# so the checked-in config works on every machine.
+relativize_graphify_hooks() {
+  ruby - <<'RUBY'
+%w[.claude/settings.json .codex/hooks.json].each do |path|
+  next unless File.exist?(path)
+  json  = File.read(path)
+  fixed = json.gsub(%r{"[^"]*/graphify }, %q{"graphify })
+  File.write(path, fixed) unless fixed == json
+end
+RUBY
+}
+
+# ---------------------------------------------------------------------------
+# graphify — knowledge graph, one global skill plus this repo's harness config
+# ---------------------------------------------------------------------------
+
+install_graphify_binary() {
+  have graphify && return 0
+
+  if have uv; then
+    note "installing graphifyy with uv"
+    uv tool install --upgrade graphifyy >/dev/null || return 1
+  elif have pipx; then
+    note "installing graphifyy with pipx"
+    pipx install graphifyy >/dev/null || return 1
+  elif have python3; then
+    note "installing graphifyy with pip"
+    python3 -m pip install --quiet graphifyy ||
+      python3 -m pip install --quiet --break-system-packages graphifyy || return 1
+  else
+    return 1
+  fi
+
+  # uv and pipx both land in ~/.local/bin, which isn't on every PATH yet.
+  have graphify || export PATH="$HOME/.local/bin:$PATH"
+  have graphify
+}
+
+setup_graphify() {
+  say "graphify"
+
+  if ! install_graphify_binary; then
+    skip "graphify — install uv (https://docs.astral.sh/uv/) or pipx, then re-run"
+    return
+  fi
+
+  # The skill itself is per-user, so it stays out of the repo.
+  graphify install --platform claude >/dev/null
+  graphify install --platform codex  >/dev/null
+  note "skill installed for Claude Code and Codex"
+
+  # These write this repo's harness config: CLAUDE.md/AGENTS.md sections,
+  # .claude/settings.json and .codex/hooks.json hooks, .cursor/rules/.
+  graphify claude install >/dev/null
+  graphify codex  install >/dev/null
+  graphify cursor install >/dev/null
+  relativize_graphify_hooks
+  note "repo wired up for Claude Code, Codex and Cursor"
+  note "run /graphify once to build the graph (graphify-out/ is gitignored)"
+}
+
+# ---------------------------------------------------------------------------
+# mattpocock/skills — a Claude Code plugin, copied files for everyone else
+# ---------------------------------------------------------------------------
+
+setup_skills() {
+  say "mattpocock/skills"
+
+  if have claude; then
+    claude plugin install mattpocock-skills@claude-plugins-official --scope project >/dev/null &&
+      note "plugin enabled for Claude Code (.claude/settings.json)" ||
+      skip "claude plugin install failed — run it by hand"
+  else
+    skip "Claude Code CLI not found — skills unavailable to Claude Code"
+  fi
+
+  # Claude Code gets the skills from the plugin; installing them here too would
+  # give it every skill twice. Codex and Cursor both read .agents/skills/.
+  if have npx; then
+    npx --yes skills@latest add mattpocock/skills \
+      --skill '*' --agent codex --agent cursor --yes ||
+      { skip "npx skills add failed — run it by hand"; return; }
+    note "skills copied to .agents/skills/ and pinned in skills-lock.json"
+  else
+    skip "npx not found — install Node.js, then re-run"
+  fi
+}
+
+# ---------------------------------------------------------------------------
+
+[ "$SKIP_GRAPHIFY" -eq 1 ] || setup_graphify
+[ "$SKIP_SKILLS" -eq 1 ]   || setup_skills
+
+if [ -n "$SKIPPED" ]; then
+  printf '\n\033[33mFinished with steps skipped:\033[0m\n%s' "$SKIPPED"
+  printf 'Re-run bin/setup-agents once the prerequisites are in place.\n'
+else
+  say "Agent tooling ready"
+  printf '    Run /setup-matt-pocock-skills once in your agent if you want to\n'
+  printf '    change the issue tracker or domain-doc layout in docs/agents/.\n'
+fi

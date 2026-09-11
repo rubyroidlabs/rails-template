@@ -59,7 +59,7 @@ Report the results of these commands to the user. Do not report the setup as don
 1. **Credentials.** `rails new` already generated a fresh `config/master.key` and `config/credentials.yml.enc`. The key is gitignored. Tell the user to store it in their password manager — it is the only copy, and Kamal reads it via `.kamal/secrets`. Never print it into a file that is tracked, a commit message, or a PR.
 2. **Remote.** Create the GitHub repo and push `main` only when the user asks. The template's CI workflow runs on `main` and on pull requests.
 3. **Deployment.** `config/deploy.yml` is the stock Kamal file with placeholder hosts and registry. Leave it alone until the user has real infrastructure.
-4. **graphify.** Run `/graphify` once so agents have a knowledge graph to query. `graphify-out/` is gitignored — the graph is rebuilt per clone, not committed.
+4. **Agent tooling.** `rails new` already ran `bin/setup-agents`; check its output for skipped steps (it needs uv or pipx for graphify, Node.js for the skills installer, and the `claude` CLI for the plugin) and re-run it once the missing tool is installed. Then run `/graphify` once so agents have a knowledge graph to query — `graphify-out/` is gitignored, so the graph is rebuilt per clone, not committed.
 
 ## 5. Read the conventions before writing any code
 
@@ -89,7 +89,7 @@ The repository is a Rails application template, not a Rails app. `template.rb` i
 
 - Files under `template/` are copied verbatim, except `.tt` files, which are rendered as ERB with the generator's context (`app_name` is the underscored app name).
 - Runtime ERB inside a `.tt` file must be escaped as `<%%= ... %>` so it reaches the generated app unevaluated. `template/config/database.yml.tt` is the example.
-- Thor's `directory` does not recurse into dot-directories, so `.agents`, `.claude`, `.codex` and `.cursor` each get their own `directory` call in `template.rb`.
+- Agent skills are **not** vendored under `template/`. `template/bin/setup-agents` installs them in the generated app with each tool's own installer (`claude plugin install`, `npx skills add`, `graphify install`), and `template.rb` runs it in `after_bundle`. Add tooling by extending that script, not by copying skill files into the repo. Set `SKIP_AGENT_SETUP=1` to generate an app without it.
 - Patches to files Rails itself generates (`config/routes.rb`, `app/controllers/application_controller.rb`, `.gitignore`, …) use `inject_into_file` against anchors in the Rails-generated content. Thor inserts verbatim, so use the `indented` helper — a squiggly heredoc alone will land at column 0.
 - `source_paths` keeps Rails' own paths after ours; `rails new` still resolves its own templates after this file has been applied.
 

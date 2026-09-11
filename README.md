@@ -77,9 +77,9 @@ A health-check request spec, rswag spec and Playwright spec ship as working exam
 This is the part `rails new` doesn't give you.
 
 - **`AGENTS.md`** — the engineering contract: architecture rules, the authorization invariant, serialization rules, testing rules, and the definition of done. Agents read it; so should humans.
-- **`CLAUDE.md`**, **`.claude/`**, **`.codex/`**, **`.cursor/`** — harness configuration for Claude Code, Codex and Cursor, checked into the repo so every contributor and every agent gets the same setup.
-- **[mattpocock/skills](https://github.com/mattpocock/skills)** — vendored under `.agents/skills/` and pinned in `skills-lock.json`, plus enabled as a Claude Code plugin. Gives you `/implement`, `/code-review`, `/research`, `/grill-with-docs` and the rest as first-class workflows instead of ad-hoc prompting.
-- **graphify** — a knowledge-graph skill vendored for all three harnesses, with hooks that push agents to query the graph before grepping. Run `/graphify` once in the new repo to build it; `graphify-out/` is gitignored.
+- **`bin/setup-agents`** — installs the agent tooling with each tool's own installer, then leaves the harness config it generates (`.claude/`, `.codex/`, `.cursor/`, `.agents/skills/`) checked into the repo so every contributor and every agent gets the same setup. `rails new` runs it for you; re-run it to upgrade. Nothing is vendored into this template by hand, so the skills you get are the ones their authors are shipping today.
+- **[mattpocock/skills](https://github.com/mattpocock/skills)** — installed as a Claude Code plugin, and copied under `.agents/skills/` (pinned in `skills-lock.json`) for Codex and Cursor. Gives you `/implement`, `/code-review`, `/research`, `/grill-with-docs` and the rest as first-class workflows instead of ad-hoc prompting.
+- **graphify** — a knowledge-graph skill wired into all three harnesses, with hooks that push agents to query the graph before grepping. Run `/graphify` once in the new repo to build it; `graphify-out/` is gitignored.
 - **`docs/agents/`** — how agents should use the issue tracker (GitHub issues via `gh`) and the domain docs (`CONTEXT.md` + `docs/adr/`, created lazily).
 
 ### Credentials
@@ -92,7 +92,7 @@ Nothing secret is in this repo. Every generated app gets its own `config/master.
 template.rb          the application template — the only file rails new downloads
 template/            everything copied into the generated app
   AGENTS.md          engineering conventions for the new app
-  .agents/ .claude/ .codex/ .cursor/   vendored skills + harness config
+  bin/setup-agents   installs the skills + graphify tooling in the new app
   spec/ e2e/ swagger/                  test suites and generated API docs
   *.tt                                 ERB templates interpolating the app name
 AGENTS.md            instructions for an agent bootstrapping a project with this template

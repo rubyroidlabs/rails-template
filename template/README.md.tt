@@ -103,11 +103,19 @@ Useful aliases: `bin/kamal console`, `bin/kamal shell`, `bin/kamal logs`, `bin/k
 
 See [AGENTS.md](AGENTS.md) for the engineering conventions this codebase follows (architecture, authorization, testing, UI). Human contributors should follow the same conventions.
 
-### AI Skills
+### Agent tooling
 
-The `mattpocock-skills` plugin is enabled for this repo — use it for development rather than working ad hoc.
+`bin/setup-agents` installs it, using each tool's own installer rather than checking copies into this repo. It is idempotent: re-run it to upgrade, or after cloning.
 
-The main skills for this project's workflow:
+```bash
+bin/setup-agents
+```
+
+It needs [uv](https://docs.astral.sh/uv/) (or pipx) for graphify and Node.js for the skills installer; anything missing is reported and skipped, and the rest still runs.
+
+#### Skills
+
+[mattpocock/skills](https://github.com/mattpocock/skills) — installed as a plugin for Claude Code, and copied to `.agents/skills/` (pinned in `skills-lock.json`) for Codex and Cursor. Use them rather than working ad hoc:
 
 - `/grill-with-docs` — stress-tests a plan/decision and, along the way, is how this project keeps its domain docs: a `CONTEXT.md` glossary and `docs/adr/` architecture decision records, both at the repo root, created lazily as real terms/decisions emerge. Agents read them per `docs/agents/domain.md`.
 - `/implement` — build the feature/fix once it's planned.
@@ -116,8 +124,6 @@ The main skills for this project's workflow:
 
 Prefer these over improvising the equivalent workflow by hand.
 
-The same skills are vendored for other harnesses under `.agents/skills/` (Codex/OpenAI-style) and pinned in `skills-lock.json`.
+#### graphify
 
-### graphify
-
-A graphify knowledge graph is wired up for Claude Code, Cursor and Codex (`.claude/`, `.cursor/`, `.codex/`). Run `/graphify` once in your agent to build it, then agents query it (`graphify query`, `graphify path`, `graphify explain`) instead of grepping. The generated `graphify-out/` directory is gitignored. The skill itself is vendored at `.claude/skills/graphify/`.
+A knowledge graph, wired up for Claude Code, Cursor and Codex — the skill is installed per-user, the hooks and rules (`.claude/settings.json`, `.codex/hooks.json`, `.cursor/rules/`, the `## graphify` sections of `CLAUDE.md` and `AGENTS.md`) are checked in. Run `/graphify` once in your agent to build the graph, then agents query it (`graphify query`, `graphify path`, `graphify explain`) instead of grepping. The generated `graphify-out/` directory is gitignored.
